@@ -9,6 +9,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.get("/", (req, res) => {
+    res.send("Hello from EcoScan Backend")
+})
+
 // Mistral AI Configuration
 const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY; // Load from .env file
