@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(
+    import.meta.url))
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [react()],
+    plugins: [
+        react({
+            // Add this to handle some React-related warnings
+            jsxRuntime: 'automatic',
+        }),
+    ],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
@@ -16,6 +25,23 @@ export default defineConfig({
     },
     build: {
         rollupOptions: {
+            // Add custom warning handler to suppress external module warnings
+            onwarn(warning, warn) {
+                // Suppress warnings about external modules
+                if (warning.code === 'UNRESOLVED_IMPORT') {
+                    return
+                }
+                // Suppress module level directive warnings
+                if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
+                    return
+                }
+                // Suppress "use client" directive warnings from React Server Components
+                if (warning.message && warning.message.includes('"use client"')) {
+                    return
+                }
+                // Log all other warnings
+                warn(warning)
+            },
             output: {
                 manualChunks: {
                     'react-vendor': ['react', 'react-dom'],
@@ -41,9 +67,11 @@ export default defineConfig({
         },
         commonjsOptions: {
             transformMixedEsModules: true,
+            include: [/node_modules/],
         },
         // Increase chunk size warning limit if needed
         chunkSizeWarningLimit: 1000,
+        sourcemap: false, // Disable sourcemaps for faster builds
     },
     optimizeDeps: {
         include: [
@@ -54,6 +82,12 @@ export default defineConfig({
             'zod',
         ],
         exclude: [],
+        esbuildOptions: {
+            // Node.js global to browser globalThis
+            define: {
+                global: 'globalThis',
+            },
+        },
     },
     server: {
         port: 5173,
